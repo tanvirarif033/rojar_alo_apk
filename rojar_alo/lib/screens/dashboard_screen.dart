@@ -21,7 +21,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   int _currentIndex = 1;
 
   final List<Widget> _pages = const [
-    QiblaScreen(),   // index 0
+    QiblaScreen(), // index 0
     HomeGrid(),     // index 1 (HOME)
     ZikirScreen(),  // index 2
   ];
