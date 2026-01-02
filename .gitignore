@@ -4,4 +4,12 @@
 **/*.user
 **/Logs/*
 
+# IDE files
+.idea/
+
+# Build outputs
+android/build/
+build/
+
+
 
