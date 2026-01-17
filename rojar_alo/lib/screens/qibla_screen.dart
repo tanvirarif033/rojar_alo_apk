@@ -1,5 +1,7 @@
 import 'dart:async';
 import 'dart:math';
+import 'dart:ui';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_qiblah/flutter_qiblah.dart';
 import 'package:geolocator/geolocator.dart';
@@ -11,14 +13,35 @@ class QiblaScreen extends StatefulWidget {
   State<QiblaScreen> createState() => _QiblaScreenState();
 }
 
-class _QiblaScreenState extends State<QiblaScreen> {
+class _QiblaScreenState extends State<QiblaScreen>
+    with SingleTickerProviderStateMixin {
   final StreamController<LocationStatus> _locationStream =
   StreamController<LocationStatus>.broadcast();
+
+  late AnimationController _glowController;
+
+  /// ±5 degree tolerance
+  static const double alignmentTolerance = 5 * pi / 180;
 
   @override
   void initState() {
     super.initState();
     _initLocation();
+
+    /// Glow animation (pulse)
+    _glowController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 900),
+      lowerBound: 0.7,
+      upperBound: 1.1,
+    );
+  }
+
+  @override
+  void dispose() {
+    _locationStream.close();
+    _glowController.dispose();
+    super.dispose();
   }
 
   Future<void> _initLocation() async {
@@ -39,176 +62,187 @@ class _QiblaScreenState extends State<QiblaScreen> {
   }
 
   @override
-  void dispose() {
-    _locationStream.close();
-    super.dispose();
-  }
-
-  @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Container(
-        width: double.infinity,
-        height: double.infinity,
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [
-              Color(0xFFE8F5E9),
-              Color(0xFFF1F8F4),
-            ],
+      body: Stack(
+        children: [
+          /// 🌙 BACKGROUND
+          Positioned.fill(
+            child: Image.asset(
+              "assets/images/islamic_bg3.png",
+              fit: BoxFit.cover,
+            ),
           ),
-        ),
-        child: StreamBuilder<LocationStatus>(
-          stream: _locationStream.stream,
-          builder: (context, snapshot) {
-            if (!snapshot.hasData) {
-              return const Center(child: CircularProgressIndicator());
-            }
 
-            final status = snapshot.data!;
+          StreamBuilder<LocationStatus>(
+            stream: _locationStream.stream,
+            builder: (context, snapshot) {
+              if (!snapshot.hasData) {
+                return const Center(
+                  child: CircularProgressIndicator(color: Colors.white),
+                );
+              }
 
-            if (!status.enabled) {
-              return const Center(child: Text("📍 Enable location service"));
-            }
+              final status = snapshot.data!;
 
-            if (status.status == LocationPermission.denied ||
-                status.status == LocationPermission.deniedForever) {
-              return Center(
-                child: ElevatedButton(
-                  onPressed: _initLocation,
-                  child: const Text("Allow Location Permission"),
-                ),
-              );
-            }
+              if (!status.enabled) {
+                return const Center(
+                  child: Text(
+                    "📍 লোকেশন সার্ভিস চালু করুন",
+                    style: TextStyle(color: Colors.white),
+                  ),
+                );
+              }
 
-            return StreamBuilder<QiblahDirection>(
-              stream: FlutterQiblah.qiblahStream,
-              builder: (context, snapshot) {
-                if (!snapshot.hasData) {
-                  return const Center(child: CircularProgressIndicator());
-                }
+              if (status.status == LocationPermission.denied ||
+                  status.status == LocationPermission.deniedForever) {
+                return Center(
+                  child: ElevatedButton(
+                    onPressed: _initLocation,
+                    child: const Text("লোকেশন অনুমতি দিন"),
+                  ),
+                );
+              }
 
-                final qiblah = snapshot.data!;
+              return StreamBuilder<QiblahDirection>(
+                stream: FlutterQiblah.qiblahStream,
+                builder: (context, snapshot) {
+                  if (!snapshot.hasData) {
+                    return const Center(
+                      child:
+                      CircularProgressIndicator(color: Colors.white),
+                    );
+                  }
 
-                /// Device heading (0° = North)
-                final double heading = qiblah.direction;
+                  final qiblah = snapshot.data!;
 
-                /// WEST relative to phone
-                final double westAngle =
-                    (270 - heading) * pi / 180;
+                  /// 🔄 Dynamic angle calculation (device → kaaba)
+                  final double angle =
+                      (qiblah.qiblah - qiblah.direction) * pi / 180;
 
-                /// Compass dial rotation
-                final double dialAngle =
-                    -heading * pi / 180;
+                  final bool isAligned =
+                      angle.abs() <= alignmentTolerance;
 
-                return Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const Text(
-                      "West Direction Indicator",
-                      style: TextStyle(
-                        fontSize: 22,
-                        fontWeight: FontWeight.bold,
-                        color: Color(0xFF1B5E20),
+                  /// 🔥 Control glow animation dynamically
+                  if (isAligned && !_glowController.isAnimating) {
+                    _glowController.repeat(reverse: true);
+                  } else if (!isAligned &&
+                      _glowController.isAnimating) {
+                    _glowController.stop();
+                    _glowController.reset();
+                  }
+
+                  return Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      /// 🧭 HEADER
+                      const Text(
+                        "কিবলার দিক",
+                        style: TextStyle(
+                          fontSize: 24,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 30),
 
-                    SizedBox(
-                      width: 300,
-                      height: 300,
-                      child: Stack(
-                        alignment: Alignment.center,
-                        children: [
-                          /// Compass Dial
-                          Transform.rotate(
-                            angle: dialAngle,
-                            child: Container(
-                              decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                gradient: const RadialGradient(
-                                  colors: [
-                                    Colors.white,
-                                    Color(0xFFE8F5E9),
-                                  ],
-                                ),
-                                border: Border.all(
-                                  color: Colors.green,
-                                  width: 4,
-                                ),
+                      const SizedBox(height: 28),
+
+                      /// 🧭 COMPASS
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(200),
+                        child: BackdropFilter(
+                          filter: ImageFilter.blur(
+                              sigmaX: 8, sigmaY: 8),
+                          child: Container(
+                            width: 300,
+                            height: 300,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: Colors.white.withOpacity(0.35),
+                              border: Border.all(
+                                color: isAligned
+                                    ? Colors.greenAccent
+                                    : Colors.white,
+                                width: 3,
                               ),
-                              child: const Stack(
-                                children: [
-                                  Positioned(
-                                    top: 12,
-                                    left: 0,
-                                    right: 0,
-                                    child: Center(
-                                      child: Text(
-                                        "N",
-                                        style: TextStyle(
-                                          color: Colors.red,
-                                          fontSize: 18,
-                                          fontWeight: FontWeight.bold,
+                            ),
+                            child: Stack(
+                              alignment: Alignment.center,
+                              children: [
+                                /// N
+                                const Positioned(
+                                  top: 12,
+                                  child: Text(
+                                    "N",
+                                    style: TextStyle(
+                                      color: Colors.red,
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ),
+
+                                /// 🕋 KAABA ARROW
+                                Transform.rotate(
+                                  angle: angle,
+                                  child: Transform.translate(
+                                    offset: const Offset(0, -115),
+                                    child: ScaleTransition(
+                                      scale: isAligned
+                                          ? _glowController
+                                          : const AlwaysStoppedAnimation(
+                                          1),
+                                      child: Container(
+                                        decoration: isAligned
+                                            ? BoxDecoration(
+                                          boxShadow: [
+                                            BoxShadow(
+                                              color: Colors
+                                                  .greenAccent
+                                                  .withOpacity(
+                                                  0.9),
+                                              blurRadius: 30,
+                                              spreadRadius: 8,
+                                            ),
+                                          ],
+                                        )
+                                            : null,
+                                        child: Image.asset(
+                                          "assets/images/kaaba_arrow.png",
+                                          width: 70,
                                         ),
                                       ),
                                     ),
                                   ),
-                                  Positioned(
-                                    left: 12,
-                                    top: 0,
-                                    bottom: 0,
-                                    child: Center(child: Text("W")),
-                                  ),
-                                  Positioned(
-                                    right: 12,
-                                    top: 0,
-                                    bottom: 0,
-                                    child: Center(child: Text("E")),
-                                  ),
-                                  Positioned(
-                                    bottom: 12,
-                                    left: 0,
-                                    right: 0,
-                                    child: Center(child: Text("S")),
-                                  ),
-                                ],
-                              ),
+                                ),
+                              ],
                             ),
                           ),
-
-                          /// 🕋 KAABA → ALWAYS MOVES TO REAL WEST
-                          Transform.rotate(
-                            angle: westAngle,
-                            child: Transform.translate(
-                              offset: const Offset(0, -120),
-                              child: Image.asset(
-                                "assets/images/kaaba_arrow.png",
-                                width: 70,
-                              ),
-                            ),
-                          ),
-                        ],
+                        ),
                       ),
-                    ),
 
-                    const SizedBox(height: 25),
-                    Text(
-                      "West = ${(270 - heading).toStringAsFixed(1)}°",
-                      style: const TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w600,
-                        color: Color(0xFF2E7D32),
+                      const SizedBox(height: 26),
+
+                      /// ✅ STATUS TEXT
+                      Text(
+                        isAligned
+                            ? "🕋 কিবলার সাথে মিলেছে"
+                            : "কিবলার দিকে ঘুরুন",
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                          color: isAligned
+                              ? Colors.greenAccent
+                              : Colors.white,
+                        ),
                       ),
-                    ),
-                  ],
-                );
-              },
-            );
-          },
-        ),
+                    ],
+                  );
+                },
+              );
+            },
+          ),
+        ],
       ),
     );
   }

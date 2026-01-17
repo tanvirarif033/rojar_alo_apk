@@ -8,6 +8,7 @@ import 'zikir_screen.dart';
 import 'about_screen.dart';
 import 'contact_screen.dart';
 import 'privacy_screen.dart';
+import 'prayer_time_widget.dart'; // ✅ already added
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -17,72 +18,106 @@ class DashboardScreen extends StatefulWidget {
 }
 
 class _DashboardScreenState extends State<DashboardScreen> {
-  // Home is center (index 1)
   int _currentIndex = 1;
 
-  final List<Widget> _pages = const [
-    QiblaScreen(), // index 0
-    HomeGrid(),     // index 1 (HOME)
-    ZikirScreen(),  // index 2
+  final List<Widget> _pages = [
+    const QiblaScreen(),
+    const HomeGrid(), //
+    const ZikirScreen(),
   ];
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.grey.shade100,
-
-      // 🔹 APP BAR
+      backgroundColor: Colors.white,
       appBar: AppBar(
-        title: const Text(
-          "Rojar Alo",
-          style: TextStyle(fontWeight: FontWeight.bold),
-        ),
-        centerTitle: true,
         backgroundColor: Colors.green.shade800,
         elevation: 0,
+        centerTitle: true,
+
+
+        leadingWidth: 56,
+
+        titleSpacing: 0,
+        title: Row(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Image.asset(
+              'assets/images/logo.png',
+              height: 80,
+              width: 80,
+              fit: BoxFit.contain,
+            ),
+            const Text(
+              "রোজার আলো",
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+                fontSize: 18,
+              ),
+            ),
+          ],
+        ),
       ),
 
-      // 🔹 DRAWER (SIDEBAR)
+
+
       drawer: Drawer(
         child: ListView(
           padding: EdgeInsets.zero,
           children: [
+            /// ================= DRAWER HEADER =================
             DrawerHeader(
+              padding: EdgeInsets.zero, // default padding remove
               decoration: BoxDecoration(
                 color: Colors.green.shade800,
               ),
-              child: const Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.mosque, color: Colors.white, size: 40),
-                  SizedBox(height: 10),
-                  Text(
-                    "Rojar Alo",
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 22,
-                      fontWeight: FontWeight.bold,
+              child: Center(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min, // tight layout
+                  children: [
+                    /// 🕌 APP LOGO (VISUALLY BIG)
+                    Image.asset(
+                      'assets/images/logo.png',
+                      height: 120,
+                      width: 120,
+                      fit: BoxFit.contain,
                     ),
-                  ),
-                ],
+
+
+                    const SizedBox(height: 8), // controlled small gap
+
+                    /// 📛 APP NAME
+                    const Text(
+                      "রোজার আলো",
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
 
+            /// ================= MENU ITEMS =================
             _drawerItem(
               context,
-              icon: Icons.info,
+              icon: Icons.info_outline,
               title: "About App",
               page: const AboutScreen(),
             ),
             _drawerItem(
               context,
-              icon: Icons.privacy_tip,
+              icon: Icons.privacy_tip_outlined,
               title: "Privacy Policy",
               page: const PrivacyScreen(),
             ),
             _drawerItem(
               context,
-              icon: Icons.contact_mail,
+              icon: Icons.contact_mail_outlined,
               title: "Contact Us",
               page: const ContactScreen(),
             ),
@@ -90,10 +125,23 @@ class _DashboardScreenState extends State<DashboardScreen> {
         ),
       ),
 
-      // 🔹 BODY
-      body: _pages[_currentIndex],
+      body: Stack(
+        children: [
+          // 🔹 Background
+          Container(
+            decoration: const BoxDecoration(
+              image: DecorationImage(
+                image: AssetImage("assets/images/islamic_bg3.png"),
+                fit: BoxFit.cover,
+              ),
+            ),
+          ),
 
-      // 🔹 CURVED BOTTOM NAV
+          // 🔹 PAGE CONTENT
+          _pages[_currentIndex],
+        ],
+      ),
+
       bottomNavigationBar: CurvedNavigationBar(
         index: 1,
         height: 60,
@@ -106,14 +154,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
           Icon(Icons.home, color: Colors.white),
           Icon(Icons.fingerprint, color: Colors.white),
         ],
-        onTap: (index) {
-          setState(() => _currentIndex = index);
-        },
+        onTap: (index) => setState(() => _currentIndex = index),
       ),
     );
   }
 
-  // 🔹 Drawer item widget
   Widget _drawerItem(BuildContext context,
       {required IconData icon,
         required String title,
@@ -123,81 +168,141 @@ class _DashboardScreenState extends State<DashboardScreen> {
       title: Text(title),
       onTap: () {
         Navigator.pop(context);
-        Navigator.push(
-          context,
-          MaterialPageRoute(builder: (_) => page),
-        );
+        Navigator.push(context, MaterialPageRoute(builder: (_) => page));
       },
     );
   }
 }
 
-// 🔹 HOME GRID (Professional Cards)
+// ===================================================
+// 🕌 HOME GRID (MODIFIED ONLY THIS PART)
+// 👉 ONLY PRAYER TIME API SHOWS HERE
+// ===================================================
+
 class HomeGrid extends StatelessWidget {
   const HomeGrid({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.all(16),
-      child: GridView.builder(
-        itemCount: contents.length,
-        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: 2,
-          mainAxisSpacing: 16,
-          crossAxisSpacing: 16,
-          childAspectRatio: 1.05,
-        ),
-        itemBuilder: (context, index) {
-          return InkWell(
-            borderRadius: BorderRadius.circular(16),
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => ContentScreen(
-                    title: contents[index]['title']!,
-                    content: contents[index]['content']!,
-                  ),
-                ),
-              );
-            },
-            child: Card(
-              elevation: 6,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
+    return SafeArea(
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          children: [
+            const SizedBox(height: 12),
+
+            /// 🕋 PRAYER TIME (TOP)
+            const PrayerTimeWidget(),
+
+            const SizedBox(height: 20),
+
+            /// 🔳 CONTENT GRID
+            GridView.builder(
+              itemCount: contents.length,
+              shrinkWrap: true, // ✅ IMPORTANT for SingleChildScrollView
+              physics: const NeverScrollableScrollPhysics(),
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 2,
+                mainAxisSpacing: 16,
+                crossAxisSpacing: 16,
+                childAspectRatio: 0.95,
               ),
-              child: Container(
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(16),
-                  gradient: LinearGradient(
-                    colors: [
-                      Colors.green.shade700,
-                      Colors.green.shade500,
-                    ],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
-                ),
-                child: Center(
-                  child: Padding(
-                    padding: const EdgeInsets.all(12),
-                    child: Text(
-                      contents[index]['title']!,
-                      textAlign: TextAlign.center,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
+              itemBuilder: (context, index) {
+                final color =
+                _cardColors[index % _cardColors.length];
+
+                return InkWell(
+                  borderRadius: BorderRadius.circular(18),
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => ContentScreen(
+                          title: contents[index]['title']!,
+                          content: contents[index]['content']!,
+                        ),
                       ),
+                    );
+                  },
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(18),
+                      border: Border.all(
+                        color: color.withOpacity(0.45),
+                        width: 1.2,
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.05),
+                          blurRadius: 8,
+                          offset: const Offset(0, 5),
+                        ),
+                      ],
+                    ),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Container(
+                          height: 58,
+                          width: 58,
+                          decoration: BoxDecoration(
+                            color: color.withOpacity(0.18),
+                            shape: BoxShape.circle,
+                          ),
+                          child: Icon(
+                            _icons[index % _icons.length],
+                            size: 30,
+                            color: color,
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        Padding(
+                          padding:
+                          const EdgeInsets.symmetric(horizontal: 8),
+                          child: Text(
+                            contents[index]['title']!,
+                            textAlign: TextAlign.center,
+                            style: const TextStyle(
+                              fontSize: 14.5,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.black87,
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-                ),
-              ),
+                );
+              },
             ),
-          );
-        },
+          ],
+        ),
       ),
     );
   }
 }
+
+// 🎨 CARD COLORS (UNCHANGED – kept for safety)
+final List<Color> _cardColors = [
+  Colors.green,
+  Colors.orange,
+  Colors.blue,
+  Colors.purple,
+  Colors.teal,
+  Colors.redAccent,
+  Colors.indigo,
+  Colors.brown,
+];
+
+// 🕌 ICONS (UNCHANGED – kept for safety)
+final List<IconData> _icons = [
+  Icons.mosque,
+  Icons.wb_sunny_outlined,
+  Icons.nightlight_round,
+  Icons.access_time,
+  Icons.volunteer_activism,
+  Icons.auto_awesome_outlined,
+  Icons.cancel_outlined,
+  Icons.menu_book,
+];

@@ -12,7 +12,7 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      title: 'Rojar Alo',
+      title: 'রোজার আলো',
       theme: ThemeData(
         primarySwatch: Colors.green,
         fontFamily: 'Roboto',

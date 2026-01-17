@@ -9,28 +9,31 @@ class SplashScreen extends StatefulWidget {
   State<SplashScreen> createState() => _SplashScreenState();
 }
 
-class _SplashScreenState extends State<SplashScreen>
-    with SingleTickerProviderStateMixin {
-
-  late AnimationController _controller;
-  late Animation<double> _scale;
+class _SplashScreenState extends State<SplashScreen> {
+  bool showMoon = false;
+  bool showKids = false;
+  bool showLogoGroup = false;
 
   @override
   void initState() {
     super.initState();
 
-    _controller = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 1200),
-    );
+    Future.delayed(const Duration(milliseconds: 300), () {
+      if (!mounted) return;
+      setState(() => showMoon = true);
+    });
 
-    _scale = Tween<double>(begin: 0.6, end: 1.0).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeOutBack),
-    );
+    Future.delayed(const Duration(milliseconds: 900), () {
+      if (!mounted) return;
+      setState(() => showKids = true);
+    });
 
-    _controller.forward();
+    Future.delayed(const Duration(milliseconds: 1600), () {
+      if (!mounted) return;
+      setState(() => showLogoGroup = true);
+    });
 
-    Timer(const Duration(seconds: 3), () {
+    Future.delayed(const Duration(seconds: 5), () {
       if (!mounted) return;
       Navigator.pushReplacement(
         context,
@@ -40,38 +43,105 @@ class _SplashScreenState extends State<SplashScreen>
   }
 
   @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  @override
   Widget build(BuildContext context) {
+    final size = MediaQuery.of(context).size;
+
+    /// 🔹 Responsive sizes
+    final double moonSize = size.width * 0.22;
+    final double kidsWidth = size.width * 0.7;
+    final double logoSize = size.width * 0.5;
+
+    /// 🔹 Responsive positions (NO OVERLAP)
+    final double moonTop = size.height * 0.08;
+    final double kidsTop = size.height * 0.26;        // kids in middle
+    final double logoGroupTop = size.height * 0.62;   // logo BELOW kids
+
     return Scaffold(
-      backgroundColor: Colors.green.shade800,
-      body: Center(
-        child: ScaleTransition(
-          scale: _scale,
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: const [
-              Icon(Icons.mosque, size: 110, color: Colors.white),
-              SizedBox(height: 20),
-              Text(
-                "Rojar Alo",
-                style: TextStyle(
-                  fontSize: 34,
-                  color: Colors.white,
-                  fontWeight: FontWeight.bold,
+      body: SafeArea(
+        child: Stack(
+          children: [
+            /// 🌄 BACKGROUND
+            Positioned.fill(
+              child: Image.asset(
+                'assets/images/bg_sp.png',
+                fit: BoxFit.cover,
+              ),
+            ),
+
+            /// 🌙 MOON (LEFT ➜ RIGHT)
+            AnimatedPositioned(
+              duration: const Duration(milliseconds: 1100),
+              curve: Curves.easeOutCubic,
+              top: showMoon ? moonTop : -moonSize,
+              left: showMoon ? size.width * 0.18 : -moonSize,
+              child: Image.asset(
+                'assets/images/sp_2.png',
+                width: moonSize,
+              ),
+            ),
+
+            /// 👧🧒 KIDS (BOTTOM ➜ UP)
+            AnimatedPositioned(
+              duration: const Duration(milliseconds: 900),
+              curve: Curves.easeOutCubic,
+              top: showKids ? kidsTop : size.height,
+              left: (size.width - kidsWidth) / 2,
+              child: Image.asset(
+                'assets/images/sp_1.png',
+                width: kidsWidth,
+              ),
+            ),
+
+            /// 🕌 LOGO + TEXT (ALWAYS BELOW KIDS)
+            AnimatedPositioned(
+              duration: const Duration(milliseconds: 900),
+              curve: Curves.easeOutCubic,
+              top: showLogoGroup ? logoGroupTop : size.height,
+              left: 0,
+              right: 0,
+              child: AnimatedOpacity(
+                duration: const Duration(milliseconds: 600),
+                opacity: showLogoGroup ? 1 : 0,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    /// LOGO
+                    SizedBox(
+                      width: logoSize,
+                      height: logoSize,
+                      child: Image.asset(
+                        'assets/images/logo.png',
+                        fit: BoxFit.contain,
+                      ),
+                    ),
+
+                    const SizedBox(height: 6),
+
+                    /// TITLE
+                    Text(
+                      'রোজার আলো',
+                      style: TextStyle(
+                        fontSize: size.width * 0.085,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                    ),
+
+                    const SizedBox(height: 2),
+
+                    /// SUBTITLE
+                    Text(
+                      'রমজানের আলোয় জীবন গড়ি',
+                      style: TextStyle(
+                        fontSize: size.width * 0.035,
+                        color: Colors.white70,
+                      ),
+                    ),
+                  ],
                 ),
               ),
-              SizedBox(height: 8),
-              Text(
-                "রমজানের আলোয় জীবন গড়ি",
-                style: TextStyle(color: Colors.white70),
-              ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );

@@ -1,6 +1,7 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 
-class ContentScreen extends StatelessWidget {
+class ContentScreen extends StatefulWidget {
   final String title;
   final String content;
 
@@ -11,110 +12,182 @@ class ContentScreen extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      body: Container(
-        width: double.infinity,
-        height: double.infinity,
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [
-              Color(0xFFE8F5E9),
-              Color(0xFFF1F8F4),
-            ],
-          ),
-        ),
+  State<ContentScreen> createState() => _ContentScreenState();
+}
 
-        child: Column(
-          children: [
-            /// ================= HEADER =================
-            Container(
-              padding: const EdgeInsets.fromLTRB(16, 48, 16, 24),
-              decoration: const BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [
-                    Color(0xFF1B5E20),
-                    Color(0xFF2E7D32),
-                  ],
-                ),
-                borderRadius: BorderRadius.only(
-                  bottomLeft: Radius.circular(32),
-                  bottomRight: Radius.circular(32),
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black26,
-                    blurRadius: 12,
-                    offset: Offset(0, 6),
-                  ),
-                ],
-              ),
-              child: Row(
-                children: [
-                  IconButton(
-                    icon: const Icon(Icons.arrow_back, color: Colors.white),
-                    onPressed: () => Navigator.pop(context),
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      title,
-                      textAlign: TextAlign.center,
-                      style: const TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                        letterSpacing: .5,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 48),
-                ],
+class _ContentScreenState extends State<ContentScreen> {
+  double _fontSize = 16.5;
+  bool _isNightMode = false;
+
+  void _zoomIn() {
+    setState(() {
+      if (_fontSize < 26) _fontSize += 1.5;
+    });
+  }
+
+  void _zoomOut() {
+    setState(() {
+      if (_fontSize > 12) _fontSize -= 1.5;
+    });
+  }
+
+  void _toggleNightMode() {
+    setState(() => _isNightMode = !_isNightMode);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final Color textColor =
+    _isNightMode ? Colors.white : Colors.black;
+
+    return Scaffold(
+      body: Stack(
+        children: [
+          // 🌙 BACKGROUND IMAGE
+          Container(
+            decoration: const BoxDecoration(
+              image: DecorationImage(
+                image: AssetImage("assets/images/islamic_bg3.png"),
+                fit: BoxFit.cover,
               ),
             ),
+          ),
 
-            const SizedBox(height: 20),
+          // 🌙 OVERLAY (DARKER IN NIGHT MODE)
+          Container(
+            color: _isNightMode
+                ? Colors.black.withOpacity(0.55)
+                : Colors.black.withOpacity(0.12),
+          ),
 
-            /// ================= CONTENT =================
-            Expanded(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(.95),
-                    borderRadius: BorderRadius.circular(24),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(.15),
-                        blurRadius: 25,
-                        offset: const Offset(0, 12),
-                      ),
-                    ],
+          // 🔹 MAIN CONTENT
+          Column(
+            children: [
+              /// ================= HEADER =================
+              Container(
+                padding: const EdgeInsets.fromLTRB(16, 48, 16, 20),
+                decoration: BoxDecoration(
+                  color: _isNightMode
+                      ? Colors.black.withOpacity(0.45)
+                      : Colors.green.shade900.withOpacity(0.75),
+                  borderRadius: const BorderRadius.only(
+                    bottomLeft: Radius.circular(28),
+                    bottomRight: Radius.circular(28),
                   ),
-                  child: Padding(
-                    padding: const EdgeInsets.all(22),
-                    child: SingleChildScrollView(
-                      physics: const BouncingScrollPhysics(),
-                      child: SelectableText(
-                        content,
-                        textAlign: TextAlign.justify,
+                ),
+                child: Row(
+                  children: [
+                    IconButton(
+                      icon: const Icon(Icons.arrow_back,
+                          color: Colors.white),
+                      onPressed: () => Navigator.pop(context),
+                    ),
+                    Expanded(
+                      child: Text(
+                        widget.title,
+                        textAlign: TextAlign.center,
                         style: const TextStyle(
-                          fontSize: 16.5,
-                          height: 1.8,
-                          color: Color(0xFF263238),
+                          fontSize: 19,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
+                    IconButton(
+                      icon: Icon(
+                        _isNightMode
+                            ? Icons.light_mode
+                            : Icons.dark_mode,
+                        color: Colors.white,
+                      ),
+                      onPressed: _toggleNightMode,
+                    ),
+                  ],
+                ),
+              ),
+
+              const SizedBox(height: 12),
+
+              /// ================= ZOOM CONTROLS =================
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: Align(
+                  alignment: Alignment.centerRight,
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(30),
+                    child: BackdropFilter(
+                      filter:
+                      ImageFilter.blur(sigmaX: 8, sigmaY: 8),
+                      child: Container(
+                        color: Colors.white.withOpacity(0.25),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            IconButton(
+                              icon: Icon(Icons.remove,
+                                  color: textColor),
+                              onPressed: _zoomOut,
+                            ),
+                            Text(
+                              _fontSize.toInt().toString(),
+                              style: TextStyle(
+                                color: textColor,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            IconButton(
+                              icon: Icon(Icons.add,
+                                  color: textColor),
+                              onPressed: _zoomIn,
+                            ),
+                          ],
                         ),
                       ),
                     ),
                   ),
                 ),
               ),
-            ),
 
-            const SizedBox(height: 20),
-          ],
-        ),
+              const SizedBox(height: 12),
+
+              /// ================= TEXT OVER BACKGROUND =================
+              Expanded(
+                child: Padding(
+                  padding:
+                  const EdgeInsets.symmetric(horizontal: 16),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(22),
+                    child: BackdropFilter(
+                      filter:
+                      ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+                      child: Container(
+                        padding: const EdgeInsets.all(20),
+                        color: _isNightMode
+                            ? Colors.black.withOpacity(0.15)
+                            : Colors.white.withOpacity(0.35),
+                        child: SingleChildScrollView(
+                          physics:
+                          const BouncingScrollPhysics(),
+                          child: SelectableText(
+                            widget.content,
+                            textAlign: TextAlign.justify,
+                            style: TextStyle(
+                              fontSize: _fontSize,
+                              height: 1.8,
+                              color: textColor, // ✅ KEY CHANGE
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+
+              const SizedBox(height: 20),
+            ],
+          ),
+        ],
       ),
     );
   }

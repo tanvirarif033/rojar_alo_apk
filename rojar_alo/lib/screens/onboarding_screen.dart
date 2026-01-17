@@ -65,6 +65,19 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     );
   }
 
+  void _onNextPressed() {
+    if (_currentIndex == pages.length - 1) {
+      // 🔹 Last page → Dashboard
+      _goToDashboard();
+    } else {
+      // 🔹 Not last page → Next slide
+      _pageController.nextPage(
+        duration: const Duration(milliseconds: 400),
+        curve: Curves.easeInOut,
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -178,14 +191,14 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 
             const SizedBox(height: 24),
 
-            // 🔹 Next / Start Button (TEXT COLOR FIXED TO WHITE)
+            // 🔹 Next / Start Button (FIXED LOGIC)
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 24),
               child: ElevatedButton(
-                onPressed: _goToDashboard,
+                onPressed: _onNextPressed,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.green.shade700,
-                  foregroundColor: Colors.white, // ✅ TEXT COLOR WHITE
+                  foregroundColor: Colors.white,
                   minimumSize: const Size(double.infinity, 52),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(14),
